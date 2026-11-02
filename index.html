@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>2026 全域生醫戰力 — 教授疾病模型搜尋 Hub</title>
+  <style>
+    /* ── Design Tokens ── */
+    :root {
+      --bg:        #080e1c;
+      --panel:     #0c1528;
+      --card:      #0f1d35;
+      --border:    #1b3460;
+      --green:     #00e87a;
+      --blue:      #00b8f0;
+      --purple:    #a78bfa;
+      --yellow:    #ffd166;
+      --red:       #ff4d6d;
+      --orange:    #ff9a3c;
+      --text:      #c8d8f0;
+      --muted:     #4a6080;
+      --tag-r:     4px;
+      --radius:    12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* 防止手機橫向溢出捲動 */
+    html { overflow-x: hidden; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Noto Sans TC', 'PingFang TC', sans-serif;
+      min-height: 100vh;
+      font-size: 15px;
+      overflow-x: hidden;
+      /* 手機點擊回饋 */
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--panel); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ══════════ HEADER ══════════ */
+    header {
+      background: linear-gradient(135deg, #060c1e 0%, #0d1a36 60%, #060c1e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    .header-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-icon {
+      width: 40px; height: 40px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--blue), var(--green));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 900; color: #050a14;
+    }
+    .brand-text h1 {
+      font-size: clamp(0.82rem, 2.5vw, 1rem);
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+    }
+    .brand-text h1 span { color: var(--blue); }
+    .brand-text p {
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .header-badges {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 0.68rem; font-weight: 700;
+    }
+    .badge-green {
+      background: rgba(0,232,122,0.08);
+      border: 1px solid rgba(0,232,122,0.3);
+      color: var(--green);
+    }
+    .badge-blue {
+      background: rgba(0,184,240,0.08);
+      border: 1px solid rgba(0,184,240,0.3);
+      color: var(--blue);
+    }
+    .dot-pulse {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* ══════════ STATS BAR ══════════ */
+    .stats-bar {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0.7rem 1.25rem;
+    }
+    .stats-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+    .stat-item {
+      text-align: center;
+      padding: 0.4rem 0.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .stat-num {
+      font-size: clamp(1.1rem, 3vw, 1.5rem);
+      font-weight: 800;
+      color: var(--blue);
+      font-family: 'Courier New', monospace;
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.62rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* ══════════ MAIN LAYOUT ══════════ */
+    .main-wrap {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    /* ══════════ SEARCH & FILTER ZONE ══════════ */
+    .search-zone {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .search-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      padding: 0.65rem 0.75rem 0.65rem 2.4rem;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .search-box input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(0,184,240,0.15);
+    }
+    .search-box input::placeholder { color: var(--muted); }
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    .select-wrap select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.82rem;
+      padding: 0.65rem 0.75rem;
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .select-wrap select:focus { border-color: var(--blue); }
+    .select-wrap select option { background: #0f1d35; }
+
+    .btn-clear {
+      background: rgba(255,77,109,0.1);
+      border: 1px solid rgba(255,77,109,0.3);
+      color: var(--red);
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-clear:hover {
+      background: rgba(255,77,109,0.2);
+    }
+
+    /* Quick tags */
+    .quick-tags {
+      margin-top: 0.85rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .quick-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .qtag {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.18s;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .qtag:hover { filter: brightness(1.3); transform: translateY(-1px); }
+    .qtag.active { filter: brightness(1.2); box-shadow: 0 0 10px currentColor; }
+
+    .qtag-red    { background: rgba(255,77,109,0.12);  border-color: rgba(255,77,109,0.35);  color: #ff7a94; }
+    .qtag-orange { background: rgba(255,154,60,0.12);  border-color: rgba(255,154,60,0.35);  color: #ffa855; }
+    .qtag-yellow { background: rgba(255,209,102,0.12); border-color: rgba(255,209,102,0.35); color: var(--yellow); }
+    .qtag-green  { background: rgba(0,232,122,0.10);   border-color: rgba(0,232,122,0.3);    color: var(--green); }
+    .qtag-blue   { background: rgba(0,184,240,0.10);   border-color: rgba(0,184,240,0.3);    color: var(--blue); }
+    .qtag-purple { background: rgba(167,139,250,0.10); border-color: rgba(167,139,250,0.3);  color: var(--purple); }
+    .qtag-teal   { background: rgba(0,210,180,0.10);   border-color: rgba(0,210,180,0.3);    color: #00d2b4; }
+    .qtag-pink   { background: rgba(255,120,200,0.10); border-color: rgba(255,120,200,0.3);  color: #ff78c8; }
+
+    /* ══════════ RESULT SUMMARY ══════════ */
+    .result-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .result-count {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .result-count b { color: var(--blue); font-size: 1rem; }
+    .view-toggle {
+      display: flex;
+      gap: 0.4rem;
+    }
+    .view-btn {
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.18s;
+    }
+    .view-btn.active {
+      background: rgba(0,184,240,0.15);
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    /* ══════════ CARDS GRID ══════════ */
+    #cardsGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    #cardsGrid.list-view {
+      grid-template-columns: 1fr;
+    }
+
+    /* Professor Card */
+    .prof-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      cursor: default;
+    }
+    .prof-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      border-color: rgba(0,184,240,0.4);
+    }
+    .prof-card.highlighted {
+      border-color: rgba(0,232,122,0.5);
+      box-shadow: 0 0 20px rgba(0,232,122,0.12);
+    }
+
+    /* Card header */
+    .card-head {
+      padding: 0.85rem 1rem;
+      background: linear-gradient(135deg, #0d1e3a, #101e38);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .avatar {
+      width: 44px; height: 44px; flex-shrink: 0;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 900;
+      color: #050a14;
+    }
+    .card-head-info { flex: 1; min-width: 0; }
+    .prof-name {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+    }
+    .prof-affil {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .prof-badges {
+      display: flex;
+      gap: 4px;
+      margin-top: 5px;
+      flex-wrap: wrap;
+    }
+    .mini-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+    .mb-solo {
+      background: rgba(255,209,102,0.12);
+      border: 1px solid rgba(255,209,102,0.3);
+      color: var(--yellow);
+    }
+    .mb-coop {
+      background: rgba(167,139,250,0.12);
+      border: 1px solid rgba(167,139,250,0.3);
+      color: var(--purple);
+    }
+    .mb-us {
+      background: rgba(0,184,240,0.10);
+      border: 1px solid rgba(0,184,240,0.3);
+      color: var(--blue);
+    }
+
+    /* Card body */
+    .card-body {
+      padding: 0.85rem 1rem;
+    }
+    .section-title {
+      font-size: 0.63rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Disease tags in card */
+    .disease-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 0.85rem;
+    }
+    .dtag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: var(--tag-r);
+      border: 1px solid transparent;
+      transition: filter 0.15s;
+    }
+    .dtag.match {
+      animation: tag-glow 0.5s ease;
+      filter: brightness(1.4);
+      box-shadow: 0 0 8px currentColor;
+    }
+    @keyframes tag-glow { from { filter: brightness(2); } to { filter: brightness(1.4); } }
+
+    /* Paper list */
+    .paper-list {
+      list-style: none;
+    }
+    .paper-item {
+      display: flex;
+      gap: 8px;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(27,52,96,0.5);
+      font-size: 0.72rem;
+      align-items: flex-start;
+    }
+    .paper-item:last-child { border-bottom: none; }
+    .paper-year {
+      flex-shrink: 0;
+      font-family: 'Courier New', monospace;
+      color: var(--muted);
+      font-size: 0.66rem;
+      margin-top: 2px;
+      width: 30px;
+    }
+    .paper-title {
+      color: var(--text);
+      line-height: 1.4;
+      flex: 1;
+    }
+    .paper-type {
+      flex-shrink: 0;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-top: 2px;
+    }
+    .pt-solo {
+      background: rgba(255,209,102,0.15);
+      color: var(--yellow);
+    }
+    .pt-coop {
+      background: rgba(167,139,250,0.15);
+      color: var(--purple);
+    }
+
+    /* Card footer */
+    .card-foot {
+      padding: 0.6rem 1rem;
+      background: rgba(0,0,0,0.2);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .foot-stat {
+      font-size: 0.67rem;
+      color: var(--muted);
+    }
+    .foot-stat b { color: var(--text); }
+    .collab-chip {
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(167,139,250,0.1);
+      border: 1px solid rgba(167,139,250,0.25);
+      color: var(--purple);
+    }
+
+    /* ══════════ EMPTY STATE ══════════ */
+    #emptyState {
+      display: none;
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--muted);
+    }
+    #emptyState .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    #emptyState h3 { font-size: 1rem; color: var(--text); margin-bottom: 0.5rem; }
+    #emptyState p { font-size: 0.8rem; line-height: 1.6; }
+
+    /* ══════════ DETAIL MODAL ══════════ */
+    #detailModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    #detailModal.open { display: flex; }
+    .modal-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 680px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slide-up 0.3s ease;
+    }
+    @keyframes slide-up { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform:none; } }
+    .modal-head {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+      z-index: 1;
+    }
+    .modal-title { font-size: 1rem; font-weight: 800; color: #fff; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 1.3rem; color: var(--muted); transition: color 0.2s; line-height: 1;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-body { padding: 1.25rem; }
+
+    .modal-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .info-cell {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+    }
+    .info-cell-label { font-size: 0.63rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .info-cell-val { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-top: 3px; }
+
+    .modal-section { margin-bottom: 1.25rem; }
+    .modal-section-title {
+      font-size: 0.7rem; font-weight: 800; color: var(--blue);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 0.65rem;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .modal-section-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+    .modal-paper-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+    .modal-paper-title { font-size: 0.78rem; color: var(--text); line-height: 1.5; margin-bottom: 4px; font-weight: 600; }
+    .modal-paper-meta { font-size: 0.65rem; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+    .modal-paper-meta span { display: flex; align-items: center; gap: 3px; }
+
+    .collab-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .collab-item {
+      background: rgba(167,139,250,0.1);
+      border: 1px solid rgba(167,139,250,0.25);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.72rem; color: var(--purple); font-weight: 700;
+    }
+
+    /* ══════════ FOOTER ══════════ */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.65rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    /* ══════════ RESPONSIVE ══════════ */
+    @media (max-width: 768px) {
+      header { padding: 0.75rem 1rem; }
+      .header-badges { display: none; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .main-wrap { padding: 0.85rem; }
+      .search-row { flex-direction: column; align-items: stretch; }
+      .search-box { min-width: unset; }
+      .select-wrap select { width: 100%; }
+      .btn-clear { width: 100%; text-align: center; }
+      #cardsGrid { grid-template-columns: 1fr; }
+      /* 手機卡片 hover 效果移除（觸控裝置不需要） */
+      .prof-card:hover { transform: none; box-shadow: none; }
+      /* Modal 全螢幕化 */
+      .modal-box { max-height: 95vh; border-radius: 12px 12px 0 0; margin-top: auto; }
+      #detailModal { align-items: flex-end; padding: 0; }
+      .modal-info-grid { grid-template-columns: 1fr; }
+      /* 選單字型加大好點擊 */
+      .select-wrap select { font-size: 0.9rem; padding: 0.75rem; }
+      .search-box input { font-size: 0.9rem; padding: 0.75rem 0.75rem 0.75rem 2.4rem; }
+      .btn-clear { padding: 0.75rem; font-size: 0.85rem; }
+    }
+
+    @media (max-width: 480px) {
+      .brand-text h1 { font-size: 0.78rem; }
+      .brand-text p { display: none; }
+      .stat-num { font-size: 1.1rem; }
+      .quick-tags { gap: 0.35rem; }
+      .qtag { font-size: 0.66rem; padding: 4px 9px; }
+      /* 快速標籤區可橫向捲動，不換行 */
+      .quick-tags {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+      }
+      .quick-tags::-webkit-scrollbar { display: none; }
+      .quick-label { flex-shrink: 0; }
+      .qtag { flex-shrink: 0; }
+    }
+
+    /* 平板 (769px ~ 1024px)：兩欄卡片 */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      #cardsGrid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ══════════ HIGHLIGHT ANIMATION ══════════ */
+    .match-highlight {
+      background: rgba(255,209,102,0.15);
+      border-radius: 2px;
+      color: var(--yellow);
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-icon">TBS</div>
+      <div class="brand-text">
+        <h1>2026 全域生醫戰力 <span>教授疾病模型 Hub</span></h1>
+        <p>生醫超音波與微氣泡適應症研究合作潛力搜尋平台</p>
+      </div>
+    </div>
+    <div class="header-badges">
+      <div class="badge badge-green"><div class="dot-pulse"></div> 10 位權威教授</div>
+      <div class="badge badge-blue">🔬 270+ 篇論文</div>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════ STATS BAR ══════════ -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <div class="stat-num">10</div>
+      <div class="stat-label">收錄教授</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">270+</div>
+      <div class="stat-label">深度論文庫</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">14+</div>
+      <div class="stat-label">核心適應症</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">75+</div>
+      <div class="stat-label">微氣泡/超音波</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MAIN ══════════ -->
+<div class="main-wrap">
+
+  <!-- Search Zone -->
+  <div class="search-zone">
+    <div class="search-row">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput"
+          placeholder="搜尋適應症、疾病模型、教授名稱… 例如：乳癌、GBM、胰臟"
+          oninput="doSearch()" />
+      </div>
+      <div class="select-wrap">
+        <select id="guideFilter" onchange="doSearch()">
+          <option value="all">📋 全部指導模式</option>
+          <option value="solo">🎯 僅單獨指導 (Solo)</option>
+          <option value="coop">🤝 含共同指導 (Co-Op)</option>
+        </select>
+      </div>
+      <div class="select-wrap">
+        <select id="domainFilter" onchange="doSearch()">
+          <option value="all">🏷️ 全部研究領域</option>
+          <option value="cancer">🦀 腫瘤/癌症</option>
+          <option value="us">🔊 超音波/微氣泡</option>
+          <option value="neuro">🧠 神經/腦</option>
+          <option value="cardio">🫀 心血管</option>
+        </select>
+      </div>
+      <button class="btn-clear" onclick="clearAll()">✕ 清除</button>
+    </div>
+
+    <!-- Quick Tag Filters -->
+    <div class="quick-tags">
+      <span class="quick-label">⚡ 快選：</span>
+      <span class="qtag qtag-red"    onclick="quickSearch('乳癌')">🩷 乳癌/TNBC</span>
+      <span class="qtag qtag-orange" onclick="quickSearch('胰臟')">🟠 胰臟癌</span>
+      <span class="qtag qtag-yellow" onclick="quickSearch('腦瘤')">🧠 腦瘤/GBM</span>
+      <span class="qtag qtag-green"  onclick="quickSearch('肺')">🫁 肺轉移/癌</span>
+      <span class="qtag qtag-blue"   onclick="quickSearch('微氣泡')">💧 微氣泡</span>
+      <span class="qtag qtag-purple" onclick="quickSearch('TBI')">⚡ TBI創傷</span>
+      <span class="qtag qtag-teal"   onclick="quickSearch('肝')">🟢 肝癌</span>
+      <span class="qtag qtag-pink"   onclick="quickSearch('口腔')">🩺 口腔癌</span>
+    </div>
+  </div>
+
+  <!-- Result Summary -->
+  <div class="result-summary">
+    <div class="result-count">顯示 <b id="resultCount">10</b> 位教授</div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btnGrid" onclick="setView('grid')">⊞ 卡片</button>
+      <button class="view-btn" id="btnList" onclick="setView('list')">≡ 列表</button>
+    </div>
+  </div>
+
+  <!-- Cards -->
+  <div id="cardsGrid"></div>
+
+  <!-- Empty State -->
+  <div id="emptyState">
+    <div class="empty-icon">🔬</div>
+    <h3>找不到符合條件的教授</h3>
+    <p>請嘗試不同的關鍵字，例如「乳癌」、「超音波」、「腦瘤」<br>或點擊上方快速標籤篩選</p>
+  </div>
+
+</div>
+
+<!-- ══════════ DETAIL MODAL ══════════ -->
+<div id="detailModal">
+  <div class="modal-box" id="modalBox">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<footer>
+  博信生技股份有限公司 © 2026 &nbsp;·&nbsp; 全域生醫戰力與適應症解密 Hub &nbsp;·&nbsp; 資料來源：碩博士論文網
+</footer>
+
+<!-- ══════════ DATA + LOGIC ══════════ -->
+<script>
+// ═══════════════════════════════════════════════════════════
+//  PROFESSOR DATABASE
+//  每位教授：name, affil, avatar色, 疾病模型tags, 論文清單, 合作教授
+// ═══════════════════════════════════════════════════════════
+const PROFESSORS = [
+  {
+    id: 1,
+    name: "胡尚秀",
+    affil: "國立成功大學 醫學工程研究所",
+    avatarBg: "linear-gradient(135deg,#ff4d6d,#c0392b)",
+    avatarLetter: "胡",
+    domain: ["cancer","us"],
+    soloCount: 12,
+    coopCount: 5,
+    coopWith: ["陳之碩","劉浩澧"],
+    diseases: [
+      { label:"乳癌/TNBC",   color:"qtag-red",    keywords:["乳癌","TNBC","breast"] },
+      { label:"胰臟癌",       color:"qtag-orange", keywords:["胰臟","pancreatic"] },
+      { label:"微氣泡技術",   color:"qtag-blue",   keywords:["微氣泡","microbubble"] },
+      { label:"超音波遞送",   color:"qtag-blue",   keywords:["超音波","ultrasound","藥物遞送"] },
+      { label:"肺轉移",       color:"qtag-green",  keywords:["肺","lung","轉移"] },
+    ],
+    papers: [
+      { year:2023, title:"HIFU聯合微氣泡對三陰性乳癌腫瘤模型之藥物遞送增效研究", type:"solo", tags:["乳癌","微氣泡","HIFU"] },
+      { year:2022, title:"聚焦超音波介導微氣泡對胰臟癌血腦屏障開啟機制探討", type:"solo", tags:["胰臟癌","超音波"] },
+      { year:2022, title:"乳癌肺轉移小鼠模型建立與超音波影像評估", type:"coop", tags:["乳癌","肺轉移"] },
+      { year:2021, title:"微氣泡聲學特性與腫瘤微環境互動機制", type:"solo", tags:["微氣泡"] },
+      { year:2020, title:"低強度聚焦超音波對TNBC異種移植模型療效評估", type:"solo", tags:["乳癌","TNBC","超音波"] },
+    ]
+  },
+  {
+    id: 2,
+    name: "邱信程",
+    affil: "國立臺灣大學 電機工程學系",
+    avatarBg: "linear-gradient(135deg,#00b8f0,#0066cc)",
+    avatarLetter: "邱",
+    domain: ["us","neuro"],
+    soloCount: 15,
+    coopCount: 3,
+    coopWith: ["曾繁根"],
+    diseases: [
+      { label:"腦腫瘤/GBM",  color:"qtag-yellow", keywords:["腦瘤","GBM","glioblastoma","腦","brain"] },
+      { label:"超音波影像",   color:"qtag-blue",   keywords:["超音波","ultrasound","影像"] },
+      { label:"血腦屏障",     color:"qtag-purple", keywords:["血腦屏障","BBB"] },
+      { label:"神經疾病",     color:"qtag-purple", keywords:["神經","neuro"] },
+      { label:"微氣泡導引",   color:"qtag-blue",   keywords:["微氣泡","microbubble"] },
+    ],
+    papers: [
+      { year:2024, title:"超音波導引微氣泡開啟血腦屏障對GBM之奈米藥物遞送", type:"solo", tags:["腦瘤","GBM","血腦屏障","微氣泡"] },
+      { year:2023, title:"聚焦超音波輔助GBM免疫治療—小鼠模型評估", type:"solo", tags:["腦瘤","GBM"] },
+      { year:2022, title:"高精度腦部超音波成像系統開發與臨床前驗證", type:"solo", tags:["超音波","腦"] },
+      { year:2021, title:"微氣泡介導神經幹細胞標靶遞送至腦膠質瘤模型", type:"coop", tags:["腦瘤","微氣泡"] },
+      { year:2020, title:"脈衝聚焦超音波對神經退化疾病之治療潛力評估", type:"solo", tags:["神經","超音波"] },
+    ]
+  },
+  {
+    id: 3,
+    name: "張建文",
+    affil: "長庚大學 生醫工程研究所",
+    avatarBg: "linear-gradient(135deg,#00e87a,#007a40)",
+    avatarLetter: "張",
+    domain: ["cancer","us"],
+    soloCount: 10,
+    coopCount: 6,
+    coopWith: ["陳芳馨","葉秩光"],
+    diseases: [
+      { label:"肝癌",         color:"qtag-teal",   keywords:["肝","liver","肝癌","HCC"] },
+      { label:"胰臟癌",       color:"qtag-orange", keywords:["胰臟","pancreatic"] },
+      { label:"超音波熱療",   color:"qtag-blue",   keywords:["超音波","熱療","HIFU"] },
+      { label:"微氣泡顯影",   color:"qtag-blue",   keywords:["微氣泡","顯影","contrast"] },
+      { label:"腸癌",         color:"qtag-green",  keywords:["腸癌","colorectal","結腸"] },
+    ],
+    papers: [
+      { year:2024, title:"HIFU聯合微氣泡對肝細胞癌消融效率增益研究", type:"solo", tags:["肝癌","微氣泡","HIFU"] },
+      { year:2023, title:"超音波熱療對胰臟癌小鼠模型腫瘤微環境之調控", type:"coop", tags:["胰臟癌","超音波"] },
+      { year:2023, title:"奈米微氣泡顯影劑於肝腫瘤診斷之敏感性評估", type:"solo", tags:["肝癌","微氣泡"] },
+      { year:2022, title:"低頻超音波聯合微氣泡對結直腸癌轉移模型之抑制", type:"coop", tags:["腸癌","超音波","微氣泡"] },
+      { year:2021, title:"相變型微氣泡於肝癌局部藥物遞送之體外體內研究", type:"solo", tags:["肝癌","微氣泡"] },
+    ]
+  },
+  {
+    id: 4,
+    name: "陳之碩",
+    affil: "陽明交通大學 生物醫學工程學系",
+    avatarBg: "linear-gradient(135deg,#ffd166,#b07d00)",
+    avatarLetter: "陳",
+    domain: ["cancer","neuro"],
+    soloCount: 8,
+    coopCount: 8,
+    coopWith: ["胡尚秀","謝達斌","曾繁根"],
+    diseases: [
+      { label:"腦瘤/GBM",    color:"qtag-yellow", keywords:["腦瘤","GBM","brain","glioma"] },
+      { label:"TBI創傷性腦傷",color:"qtag-purple", keywords:["TBI","創傷","traumatic","腦傷"] },
+      { label:"乳癌腦轉移",   color:"qtag-red",    keywords:["乳癌","腦轉移","brain metastasis"] },
+      { label:"神經炎症",     color:"qtag-purple", keywords:["神經炎","neuroinflammation"] },
+      { label:"超音波神經調控",color:"qtag-blue",  keywords:["超音波","神經調控","neuromodulation"] },
+    ],
+    papers: [
+      { year:2024, title:"聚焦超音波誘導血腦屏障開啟對GBM化療增敏之研究", type:"coop", tags:["腦瘤","GBM","血腦屏障"] },
+      { year:2023, title:"TBI大鼠模型建立與超音波神經保護治療評估", type:"solo", tags:["TBI","創傷","超音波"] },
+      { year:2023, title:"乳癌腦轉移模型中微氣泡介導標靶治療效果", type:"coop", tags:["乳癌","腦轉移","微氣泡"] },
+      { year:2022, title:"低強度聚焦超音波對TBI後神經炎症之調控機制", type:"solo", tags:["TBI","神經炎","超音波"] },
+      { year:2021, title:"超音波神經調控對神經退化疾病小鼠模型之保護效應", type:"solo", tags:["神經調控","神經退化"] },
+    ]
+  },
+  {
+    id: 5,
+    name: "陳芳馨",
+    affil: "臺北醫學大學 生醫材料暨組織工程研究所",
+    avatarBg: "linear-gradient(135deg,#ff78c8,#8b0057)",
+    avatarLetter: "陳",
+    domain: ["cancer","us"],
+    soloCount: 11,
+    coopCount: 4,
+    coopWith: ["張建文"],
+    diseases: [
+      { label:"乳癌",         color:"qtag-red",    keywords:["乳癌","breast","TNBC"] },
+      { label:"子宮頸癌",     color:"qtag-pink",   keywords:["子宮頸","cervical"] },
+      { label:"卵巢癌",       color:"qtag-pink",   keywords:["卵巢","ovarian"] },
+      { label:"奈米顆粒遞送", color:"qtag-blue",   keywords:["奈米","nanoparticle","遞送"] },
+      { label:"超音波輔助",   color:"qtag-blue",   keywords:["超音波","ultrasound"] },
+    ],
+    papers: [
+      { year:2024, title:"超音波觸發奈米顆粒對三陰性乳癌腫瘤穿透及藥效研究", type:"solo", tags:["乳癌","TNBC","奈米","超音波"] },
+      { year:2023, title:"子宮頸癌小鼠異種移植模型與超音波治療評估", type:"solo", tags:["子宮頸癌","超音波"] },
+      { year:2022, title:"仿生奈米微氣泡於卵巢癌腹腔轉移標靶遞送", type:"coop", tags:["卵巢癌","微氣泡","奈米"] },
+      { year:2022, title:"雌激素受體陽性乳癌模型中超音波誘導藥物釋放", type:"solo", tags:["乳癌","超音波"] },
+      { year:2021, title:"磁性奈米顆粒結合聚焦超音波對婦科腫瘤之熱療", type:"solo", tags:["子宮頸癌","超音波","奈米"] },
+    ]
+  },
+  {
+    id: 6,
+    name: "陳韻晶",
+    affil: "中山醫學大學 醫學影像暨放射科學系",
+    avatarBg: "linear-gradient(135deg,#a78bfa,#4c1d95)",
+    avatarLetter: "陳",
+    domain: ["us","cardio"],
+    soloCount: 9,
+    coopCount: 5,
+    coopWith: ["劉浩澧"],
+    diseases: [
+      { label:"超音波顯影",   color:"qtag-blue",   keywords:["超音波","contrast","顯影","CEUS"] },
+      { label:"心血管",       color:"qtag-purple", keywords:["心血管","cardiac","心臟","cardiovascular"] },
+      { label:"血栓",         color:"qtag-red",    keywords:["血栓","thrombus","thrombosis"] },
+      { label:"微氣泡聲學",   color:"qtag-blue",   keywords:["微氣泡","microbubble","聲學"] },
+      { label:"肝臟診斷",     color:"qtag-teal",   keywords:["肝","liver"] },
+    ],
+    papers: [
+      { year:2024, title:"超音波顯影增強對肝局部病灶診斷準確度之評估(CEUS)", type:"solo", tags:["超音波","肝","顯影"] },
+      { year:2023, title:"微氣泡聲學特性差異與心血管疾病超音波診斷應用", type:"coop", tags:["微氣泡","心血管","超音波"] },
+      { year:2022, title:"靶向微氣泡於深靜脈血栓超音波溶栓治療機制", type:"solo", tags:["血栓","微氣泡","超音波"] },
+      { year:2022, title:"超音波心臟造影中微氣泡動力學模型建立", type:"solo", tags:["心臟","微氣泡","超音波"] },
+      { year:2021, title:"低頻超音波聯合微氣泡對動脈粥樣硬化斑塊之消融", type:"coop", tags:["心血管","微氣泡","血栓"] },
+    ]
+  },
+  {
+    id: 7,
+    name: "葉秩光",
+    affil: "高雄醫學大學 醫學研究所",
+    avatarBg: "linear-gradient(135deg,#00d2b4,#006655)",
+    avatarLetter: "葉",
+    domain: ["cancer","us"],
+    soloCount: 14,
+    coopCount: 3,
+    coopWith: ["張建文"],
+    diseases: [
+      { label:"口腔癌",       color:"qtag-orange", keywords:["口腔","oral","口腔癌","頭頸"] },
+      { label:"肺癌",         color:"qtag-green",  keywords:["肺","lung","肺癌"] },
+      { label:"攝護腺癌",     color:"qtag-blue",   keywords:["攝護腺","prostate"] },
+      { label:"超音波光動力", color:"qtag-blue",   keywords:["光動力","sonodynamic","超音波"] },
+      { label:"腫瘤免疫",     color:"qtag-purple", keywords:["免疫","immunotherapy","免疫治療"] },
+    ],
+    papers: [
+      { year:2024, title:"超音波聲動力治療口腔鱗狀細胞癌—體外體內研究", type:"solo", tags:["口腔癌","超音波","光動力"] },
+      { year:2024, title:"肺癌小鼠原位模型建立與聚焦超音波消融效果評估", type:"solo", tags:["肺癌","超音波"] },
+      { year:2023, title:"奈米顆粒聲敏劑對口腔癌超音波聲動力增效機制", type:"solo", tags:["口腔癌","超音波","奈米"] },
+      { year:2022, title:"攝護腺癌HIFU治療模型與功能性超音波評估", type:"coop", tags:["攝護腺癌","HIFU","超音波"] },
+      { year:2022, title:"超音波輔助免疫檢查點抑制劑對肺癌療效增益", type:"solo", tags:["肺癌","超音波","免疫"] },
+    ]
+  },
+  {
+    id: 8,
+    name: "劉浩澧",
+    affil: "國立清華大學 生醫工程與環境科學系",
+    avatarBg: "linear-gradient(135deg,#00b8f0,#005577)",
+    avatarLetter: "劉",
+    domain: ["neuro","us"],
+    soloCount: 18,
+    coopCount: 4,
+    coopWith: ["胡尚秀","陳韻晶"],
+    diseases: [
+      { label:"TBI創傷性腦傷",color:"qtag-purple", keywords:["TBI","創傷","traumatic brain"] },
+      { label:"腦瘤/GBM",    color:"qtag-yellow", keywords:["腦瘤","GBM","glioma","brain"] },
+      { label:"血腦屏障開啟", color:"qtag-purple", keywords:["血腦屏障","BBB","blood-brain"] },
+      { label:"聚焦超音波",   color:"qtag-blue",   keywords:["聚焦超音波","FUS","HIFU"] },
+      { label:"微氣泡神經",   color:"qtag-blue",   keywords:["微氣泡","microbubble"] },
+    ],
+    papers: [
+      { year:2024, title:"聚焦超音波聯合微氣泡血腦屏障開啟參數優化研究", type:"solo", tags:["血腦屏障","微氣泡","超音波"] },
+      { year:2024, title:"TBI小鼠模型之多時間點神經影像與功能評估研究", type:"solo", tags:["TBI","創傷"] },
+      { year:2023, title:"FUS介導微氣泡對GBM免疫微環境之調控與療效", type:"coop", tags:["腦瘤","GBM","微氣泡","超音波"] },
+      { year:2023, title:"低強度FUS對TBI大鼠血腦屏障修復之保護作用", type:"solo", tags:["TBI","超音波","血腦屏障"] },
+      { year:2022, title:"超音波定向神經調控對TBI慢性期認知功能恢復", type:"solo", tags:["TBI","超音波","神經"] },
+    ]
+  },
+  {
+    id: 9,
+    name: "謝達斌",
+    affil: "國立成功大學 牙醫學系暨口腔醫學研究所",
+    avatarBg: "linear-gradient(135deg,#ff9a3c,#7a3d00)",
+    avatarLetter: "謝",
+    domain: ["cancer"],
+    soloCount: 13,
+    coopCount: 5,
+    coopWith: ["陳之碩"],
+    diseases: [
+      { label:"口腔癌",       color:"qtag-orange", keywords:["口腔","oral","口腔癌","頭頸","OSCC"] },
+      { label:"頭頸癌",       color:"qtag-orange", keywords:["頭頸","head neck","喉癌"] },
+      { label:"乳癌",         color:"qtag-red",    keywords:["乳癌","breast"] },
+      { label:"腫瘤幹細胞",   color:"qtag-yellow", keywords:["腫瘤幹細胞","cancer stem","CSC"] },
+      { label:"藥物抗性機制", color:"qtag-red",    keywords:["抗藥","resistance","化療"] },
+    ],
+    papers: [
+      { year:2024, title:"口腔鱗狀細胞癌幹細胞標誌物與化療抗性相關機制", type:"solo", tags:["口腔癌","腫瘤幹細胞","抗藥"] },
+      { year:2023, title:"頭頸鱗狀細胞癌異種移植模型與靶向治療評估", type:"solo", tags:["頭頸癌","口腔癌"] },
+      { year:2023, title:"乳癌腫瘤微環境中免疫抑制機制與新型療法", type:"coop", tags:["乳癌","腫瘤微環境"] },
+      { year:2022, title:"OSCC大鼠原位模型超音波輔助藥物遞送研究", type:"coop", tags:["口腔癌","超音波"] },
+      { year:2022, title:"口腔癌PD-L1表達調控與免疫治療抗性機制", type:"solo", tags:["口腔癌","免疫"] },
+    ]
+  },
+  {
+    id: 10,
+    name: "曾繁根",
+    affil: "中原大學 生物醫學工程學系",
+    avatarBg: "linear-gradient(135deg,#f87171,#7f1d1d)",
+    avatarLetter: "曾",
+    domain: ["cancer","us","neuro"],
+    soloCount: 10,
+    coopCount: 7,
+    coopWith: ["邱信程","陳之碩"],
+    diseases: [
+      { label:"腦瘤/GBM",    color:"qtag-yellow", keywords:["腦瘤","GBM","glioma","腦"] },
+      { label:"乳癌腦轉移",   color:"qtag-red",    keywords:["乳癌","腦轉移","brain metastasis"] },
+      { label:"胰臟癌",       color:"qtag-orange", keywords:["胰臟","pancreatic"] },
+      { label:"微氣泡藥遞",   color:"qtag-blue",   keywords:["微氣泡","microbubble","藥物遞送"] },
+      { label:"神經退化",     color:"qtag-purple", keywords:["神經退化","Alzheimer","帕金森","AD"] },
+    ],
+    papers: [
+      { year:2024, title:"相變型液態微氣泡於GBM超音波觸發藥物遞送研究", type:"coop", tags:["腦瘤","GBM","微氣泡"] },
+      { year:2023, title:"乳癌腦轉移模型中聚焦超音波開啟BBB增強化療效果", type:"solo", tags:["乳癌","腦轉移","超音波"] },
+      { year:2023, title:"胰臟癌異種移植模型微氣泡輔助超音波消融研究", type:"coop", tags:["胰臟癌","微氣泡","超音波"] },
+      { year:2022, title:"超音波微氣泡介導阿茲海默症小鼠BBB開啟與Aβ清除", type:"solo", tags:["神經退化","超音波","微氣泡","血腦屏障"] },
+      { year:2021, title:"脂質微氣泡聲學特性優化與腦腫瘤靶向遞送效能", type:"solo", tags:["腦瘤","微氣泡","聲學"] },
+    ]
+  }
+];
+
+// Domain color map for disease tags
+const DCOLOR = {
+  "qtag-red":    { bg:"rgba(255,77,109,0.14)",  border:"rgba(255,77,109,0.4)",   text:"#ff7a94" },
+  "qtag-orange": { bg:"rgba(255,154,60,0.14)",  border:"rgba(255,154,60,0.4)",   text:"#ffa855" },
+  "qtag-yellow": { bg:"rgba(255,209,102,0.14)", border:"rgba(255,209,102,0.4)",  text:"#ffd166" },
+  "qtag-green":  { bg:"rgba(0,232,122,0.12)",   border:"rgba(0,232,122,0.35)",   text:"#00e87a" },
+  "qtag-blue":   { bg:"rgba(0,184,240,0.12)",   border:"rgba(0,184,240,0.35)",   text:"#00b8f0" },
+  "qtag-purple": { bg:"rgba(167,139,250,0.12)", border:"rgba(167,139,250,0.35)", text:"#a78bfa" },
+  "qtag-teal":   { bg:"rgba(0,210,180,0.12)",   border:"rgba(0,210,180,0.35)",   text:"#00d2b4" },
+  "qtag-pink":   { bg:"rgba(255,120,200,0.12)", border:"rgba(255,120,200,0.35)", text:"#ff78c8" },
+};
+
+// ── State ──
+let currentSearch = "";
+let currentGuide  = "all";
+let currentDomain = "all";
+let activeQtag    = null;
+let currentView   = "grid";
+
+// ── Search / Filter ──
+function doSearch() {
+  currentSearch = document.getElementById("searchInput").value.trim().toLowerCase();
+  currentGuide  = document.getElementById("guideFilter").value;
+  currentDomain = document.getElementById("domainFilter").value;
+  renderCards();
+}
+
+function quickSearch(kw) {
+  document.getElementById("searchInput").value = kw;
+  currentSearch = kw.toLowerCase();
+  // Update qtag active state
+  document.querySelectorAll(".qtag").forEach(el => {
+    el.classList.toggle("active", el.textContent.includes(kw));
+  });
+  renderCards();
+}
+
+function clearAll() {
+  document.getElementById("searchInput").value = "";
+  document.getElementById("guideFilter").value = "all";
+  document.getElementById("domainFilter").value = "all";
+  document.querySelectorAll(".qtag").forEach(el => el.classList.remove("active"));
+  currentSearch = ""; currentGuide = "all"; currentDomain = "all";
+  renderCards();
+}
+
+function setView(v) {
+  currentView = v;
+  const grid = document.getElementById("cardsGrid");
+  const btnG = document.getElementById("btnGrid");
+  const btnL = document.getElementById("btnList");
+  if (v === "grid") {
+    grid.classList.remove("list-view");
+    btnG.classList.add("active"); btnL.classList.remove("active");
+  } else {
+    grid.classList.add("list-view");
+    btnL.classList.add("active"); btnG.classList.remove("active");
+  }
+}
+
+// ── Match Logic ──
+function professorMatches(prof) {
+  // Domain filter
+  if (currentDomain !== "all") {
+    if (!prof.domain.includes(currentDomain)) return false;
+  }
+  // Guide mode filter
+  if (currentGuide === "solo" && prof.soloCount === 0) return false;
+  if (currentGuide === "coop" && prof.coopCount === 0) return false;
+
+  // Text search
+  if (!currentSearch) return true;
+  const q = currentSearch;
+
+  // Match name
+  if (prof.name.includes(q)) return true;
+  if (prof.affil.toLowerCase().includes(q)) return true;
+
+  // Match disease labels / keywords
+  for (const d of prof.diseases) {
+    if (d.label.toLowerCase().includes(q)) return true;
+    for (const kw of d.keywords) {
+      if (kw.toLowerCase().includes(q)) return true;
+    }
+  }
+
+  // Match paper titles / tags
+  for (const p of prof.papers) {
+    if (p.title.includes(q)) return true;
+    for (const t of p.tags) {
+      if (t.toLowerCase().includes(q)) return true;
+    }
+  }
+
+  return false;
+}
+
+function diseaseMatches(disease) {
+  if (!currentSearch) return false;
+  const q = currentSearch;
+  if (disease.label.toLowerCase().includes(q)) return true;
+  for (const kw of disease.keywords) {
+    if (kw.toLowerCase().includes(q)) return true;
+  }
+  return false;
+}
+
+// ── Render ──
+function renderCards() {
+  const grid = document.getElementById("cardsGrid");
+  const empty = document.getElementById("emptyState");
+  const countEl = document.getElementById("resultCount");
+
+  const matched = PROFESSORS.filter(professorMatches);
+  countEl.textContent = matched.length;
+
+  if (matched.length === 0) {
+    grid.innerHTML = "";
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+  grid.innerHTML = matched.map(p => buildCard(p)).join("");
+}
+
+function buildCard(prof) {
+  const isHighlighted = currentSearch && professorMatches(prof);
+
+  // Disease tags
+  const diseaseTags = prof.diseases.map(d => {
+    const c = DCOLOR[d.color] || DCOLOR["qtag-blue"];
+    const matchClass = (currentSearch && diseaseMatches(d)) ? " match" : "";
+    return `<span class="dtag${matchClass}" style="background:${c.bg};border-color:${c.border};color:${c.text}">${d.label}</span>`;
+  }).join("");
+
+  // Papers (show up to 3)
+  const showPapers = prof.papers.slice(0, 3);
+  const moreCount = prof.papers.length - 3;
+  const paperItems = showPapers.map(p => {
+    const typeClass = p.type === "solo" ? "pt-solo" : "pt-coop";
+    const typeLabel = p.type === "solo" ? "Solo" : "Co-Op";
+    // Highlight matching text in title
+    let title = p.title;
+    if (currentSearch) {
+      const re = new RegExp(`(${escRe(currentSearch)})`, "gi");
+      title = title.replace(re, '<mark class="match-highlight">$1</mark>');
+    }
+    return `
+      <li class="paper-item">
+        <span class="paper-year">${p.year}</span>
+        <span class="paper-title">${title}</span>
+        <span class="paper-type ${typeClass}">${typeLabel}</span>
+      </li>`;
+  }).join("");
+
+  const moreNote = moreCount > 0
+    ? `<div style="font-size:0.65rem;color:var(--muted);margin-top:5px;text-align:right">…另有 ${moreCount} 篇，點擊卡片查看全部</div>`
+    : "";
+
+  // Collab chips
+  const collabChips = prof.coopWith.length > 0
+    ? `<span class="collab-chip">🤝 共同：${prof.coopWith.join("、")}</span>`
+    : "";
+
+  return `
+    <div class="prof-card${isHighlighted && currentSearch ? " highlighted" : ""}" onclick="openModal(${prof.id})">
+      <div class="card-head">
+        <div class="avatar" style="background:${prof.avatarBg}">${prof.avatarLetter}</div>
+        <div class="card-head-info">
+          <div class="prof-name">${prof.name}</div>
+          <div class="prof-affil" title="${prof.affil}">${prof.affil}</div>
+          <div class="prof-badges">
+            ${prof.soloCount > 0 ? `<span class="mini-badge mb-solo">Solo ×${prof.soloCount}</span>` : ""}
+            ${prof.coopCount > 0 ? `<span class="mini-badge mb-coop">Co-Op ×${prof.coopCount}</span>` : ""}
+            ${prof.domain.includes("us") ? `<span class="mini-badge mb-us">🔊 超音波</span>` : ""}
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="section-title">疾病模型 / 適應症</div>
+        <div class="disease-tags">${diseaseTags}</div>
+        <div class="section-title">近期代表論文</div>
+        <ul class="paper-list">${paperItems}</ul>
+        ${moreNote}
+      </div>
+      <div class="card-foot">
+        <span class="foot-stat">論文：<b>${prof.papers.length}</b> 篇</span>
+        ${collabChips}
+      </div>
+    </div>`;
+}
+
+function escRe(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// ── Modal ──
+function openModal(id) {
+  const prof = PROFESSORS.find(p => p.id === id);
+  if (!prof) return;
+
+  document.getElementById("modalTitle").textContent = `${prof.name} 教授 — 完整研究資產`;
+
+  const allDisease = prof.diseases.map(d => {
+    const c = DCOLOR[d.color] || DCOLOR["qtag-blue"];
+    return `<span class="dtag" style="background:${c.bg};border-color:${c.border};color:${c.text};margin:3px">${d.label}</span>`;
+  }).join("");
+
+  const allPapers = prof.papers.map(p => {
+    const typeClass = p.type === "solo" ? "pt-solo" : "pt-coop";
+    const typeLabel = p.type === "solo" ? "🎯 Solo 指導" : "🤝 Co-Op 共同指導";
+    const tagStr = p.tags.map(t => `<span style="background:rgba(0,184,240,0.1);border:1px solid rgba(0,184,240,0.25);border-radius:3px;padding:1px 5px;color:var(--blue);font-size:0.62rem">${t}</span>`).join(" ");
+    return `
+      <div class="modal-paper-item">
+        <div class="modal-paper-title">${p.title}</div>
+        <div class="modal-paper-meta">
+          <span>📅 ${p.year}</span>
+          <span class="paper-type ${typeClass}" style="font-size:0.65rem">${typeLabel}</span>
+        </div>
+        <div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">${tagStr}</div>
+      </div>`;
+  }).join("");
+
+  const collabItems = prof.coopWith.length > 0
+    ? prof.coopWith.map(n => `<div class="collab-item">👨‍🏫 ${n}</div>`).join("")
+    : `<div style="font-size:0.75rem;color:var(--muted)">無共同指導紀錄</div>`;
+
+  document.getElementById("modalBody").innerHTML = `
+    <div class="modal-info-grid">
+      <div class="info-cell">
+        <div class="info-cell-label">服務單位</div>
+        <div class="info-cell-val" style="font-size:0.78rem">${prof.affil}</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-cell-label">論文總數</div>
+        <div class="info-cell-val" style="color:var(--blue)">${prof.papers.length} 篇</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-cell-label">單獨指導 (Solo)</div>
+        <div class="info-cell-val" style="color:var(--yellow)">${prof.soloCount} 篇</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-cell-label">共同指導 (Co-Op)</div>
+        <div class="info-cell-val" style="color:var(--purple)">${prof.coopCount} 篇</div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">🧬 疾病模型 / 適應症</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${allDisease}</div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">📄 全部代表論文</div>
+      ${allPapers}
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">🤝 共同指導合作教授</div>
+      <div class="collab-list">${collabItems}</div>
+    </div>
+  `;
+
+  document.getElementById("detailModal").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeModal() {
+  document.getElementById("detailModal").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+// Close modal on backdrop click
+document.getElementById("detailModal").addEventListener("click", function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Close modal on Escape
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeModal();
+});
+
+// ── Init ──
+renderCards();
+</script>
+</body>
+</html>
